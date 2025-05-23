@@ -42,6 +42,7 @@ exports.createPost = async (req, res) => {
 }
 
 
+
 exports.updatePost = async (req, res) => {
     try {
         const updateData = { ...req.body };
@@ -72,6 +73,8 @@ exports.updatePost = async (req, res) => {
     }
 }
 
+
+
 exports.getAllPosts = async (req, res) => {
     try {
       const posts = await BlogService.getAllPosts(req.query);
@@ -80,6 +83,8 @@ exports.getAllPosts = async (req, res) => {
       res.status(500).json({ success: false, error: error.message });
     }
   }
+
+
 
   exports.getPost = async (req, res) => {
     try {
@@ -90,6 +95,8 @@ exports.getAllPosts = async (req, res) => {
     }
   }
 
+
+
   exports.deletePost = async (req, res) => {
     try {
       await BlogService.deletePost(req.params.id);
@@ -98,6 +105,7 @@ exports.getAllPosts = async (req, res) => {
       res.status(400).json({ success: false, error: error.message });
     }
   }
+
 
   exports.searchPosts = async (req, res) => {
     try {
@@ -129,6 +137,7 @@ exports.getAllPosts = async (req, res) => {
       res.status(404).json({ success: false, error: error.message });
     }
   }
+
 
   exports.createCategory = async (req, res) => {
     try {

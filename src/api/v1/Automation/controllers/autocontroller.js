@@ -1,14 +1,16 @@
-const AutomationService = require('../services/automationService');
+const AutomationService = require('../services/autoservices');
 
+// Create new automation
 exports.createAutomation = async (req, res) => {
     try {
-        const createdAutomation = await AutomationService.create(req.body,);
+        const createdAutomation = await AutomationService.create();
         res.status(201).json(createdAutomation);
     } catch (error) {
         res.status(500).json({ message: 'Error creating automation', error });
     }
 };
 
+// Get all automations
 exports.getAllAutomations = async (req, res) => {
     try {
         const automations = await AutomationService.getAllAutomation();
@@ -18,7 +20,7 @@ exports.getAllAutomations = async (req, res) => {
     }
 };
 
-
+// Get automation by ID
 exports.getAutomationById = async (req, res) => {
     try {
         const automation = await AutomationService.getAutomationById(req.params.id);
@@ -31,25 +33,13 @@ exports.getAutomationById = async (req, res) => {
 exports.updateAutomation = async (req, res) => {
     try {
         const updatedAutomation = await AutomationService.updateAutomation(req.params.id, req.body);
-            return res.status(404).json({ message: 'Automation not found' });
         res.status(200).json(updatedAutomation);
     } catch (error) {
         res.status(500).json({ message: 'Error updating automation', error });
     }
 };
 
-exports.deleteAutomation = async (req, res) => {
-    try {
-        const deletedAutomation = await AutomationService.deleteAutomation(req.params.id);
-        if (!deletedAutomation) {
-            return res.status(404).json({ message: 'Automation not found' });
-        }
-        res.status(200).json({ message: 'Automation deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ message: 'Error deleting automation', error });
-    }
-};
-
+// Delete all automations
 exports.deleteAllAutomations = async (req, res) => {
     try {
         await AutomationService.deleteall();
@@ -57,4 +47,13 @@ exports.deleteAllAutomations = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: 'Error deleting all automations', error });
     }
-};
+}; 
+
+exports.deleteAutomation = async (req, res) => {
+    try {
+        await AutomationService.deleteAutomation(req.params.id);
+        res.status(200).json({ message: 'Automation deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting automation', error });
+    }
+};  

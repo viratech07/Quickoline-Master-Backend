@@ -34,12 +34,11 @@ exports.updateAutomation = async (id, AutomationData) => {
             form_name,
             form_page_name,
             form_url_pattern,
-            fieldsa: {
+            fields: {
                 fields_name,
                 fields_type,
                 fields_selector
-            }
-           created_at,
+            },
             identfier
         },
 

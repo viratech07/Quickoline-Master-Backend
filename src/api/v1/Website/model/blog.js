@@ -127,6 +127,57 @@ const PrivacyPolicySchema = new mongoose.Schema({
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } 
 });
 
+
+// Add pagination plugin
+PostSchema.plugin(mongoosePaginate);
+PageSchema.plugin(mongoosePaginate);
+CategorySchema.plugin(mongoosePaginate);
+TagSchema.plugin(mongoosePaginate);
+PrivacyPolicySchema.plugin(mongoosePaginate);
+
+function addSlugGeneration(schema, sourceField = 'title') {
+  schema.pre('save', function (next) {
+    if (this.isModified(sourceField)) {
+      const timestamp = Date.now();
+      const randomString = Math.random().toString(36).substring(2, 8);
+      const baseSlug = this[sourceField];
+      this.slug = `${slugify(baseSlug, { lower: true })}-${timestamp}-${randomString}`;
+    }
+    next();
+  });
+}
+// Add population options for Post model
+PostSchema.pre('find', function() {
+  this.populate('categories tags');
+});
+
+PostSchema.pre('findOne', function() {
+  this.populate('categories tags');
+});
+
+// This virtual property 'formattedDate' adds a computed field to the Post schema
+// It converts the created_at timestamp into a localized date string
+// Example: If created_at is "2023-12-25T08:30:00Z", formattedDate might return "12/25/2023"
+// The virtual field is not stored in the database but computed on-the-fly when accessed
+PostSchema.virtual('formattedDate').get(function() {
+  return new Date(this.created_at).toLocaleDateString();
+});
+
+// Middleware to ensure only one active version exists
+PrivacyPolicySchema.pre('save', async function(next) {
+  if (this.isActive) {
+    await this.constructor.updateMany(
+      { _id: { $ne: this._id } },
+      { isActive: false }
+    );
+  }
+  next();
+});
+
+
+
+
+
  const Post = mongoose.model('Post', PostSchema)
  const Page = mongoose.model('Page', PageSchema)
  const Category = mongoose.model('Category', CategorySchema)

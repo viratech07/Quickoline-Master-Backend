@@ -30,19 +30,118 @@ exports.createPost = async (postData) => {
 }
 
 // Post Services
-exports.getAllPosts = async ({ page = 1, limit = 10, filters = {} } = {}) => {
+exports.getAllPosts = async (queryParams = {}) => {
     try {
-        return await Post.paginate(
-            { published: true, ...filters },
-            {
-                page: Number(page) || 1,
-                limit: Number(limit) || 10,
-                sort: { created_at: -1 },
-                populate: ['categories', 'tags']
+        /**
+         * STEP 1: Process Client Query Parameters
+         * Example client request: GET /api/posts?page=2&limit=20&category=tech&status=published
+         * queryParams: Raw data from the client/request (HTTP query parameters)
+         */
+        const {
+            // Pagination params (from URL query string)
+            page = 1,        // ?page=2
+            limit = 10,      // ?limit=20
+            sort = '-created_at',  // ?sort=-created_at (descending) or created_at (ascending)
+
+            // Filter params (from URL query string)
+            status,         // ?status=published
+            category,       // ?category=tech
+            tag,           // ?tag=javascript
+            author,        // ?author=12345
+            isPublished = true  // ?isPublished=true
+        } = queryParams;
+
+        /**
+         * STEP 2: Build MongoDB Query Filters
+         * Converts client filters to MongoDB query syntax
+         * Example MongoDB query: { published: true, categories: 'tech', status: 'published' }
+         */
+        const filters = {};
+
+        // Set base published status
+        if (isPublished !== undefined) {
+            filters.published = isPublished;  // MongoDB: { published: true }
+        }
+
+        // Map client filters to MongoDB fields
+        const filterMapping = {
+            status: { 
+                field: 'status',           // MongoDB field name
+                value: status              // Client value
+            },
+            category: { 
+                field: 'categories',       // References Category model via ObjectId
+                value: category
+            },
+            tag: { 
+                field: 'tags',            // References Tag model via ObjectId
+                value: tag
+            },
+            author: { 
+                field: 'author.employeeId',  // Nested field in Post model
+                value: author
             }
-        );
+        };
+
+        // Build filters dynamically
+        Object.entries(filterMapping).forEach(([clientParam, mongoField]) => {
+            if (mongoField.value) {
+                filters[mongoField.field] = mongoField.value;
+            }
+        });
+
+        /**
+         * STEP 3: Configure MongoDB/Mongoose Options
+         * Sets up pagination, sorting, and field selection
+         * options: Formatted data for MongoDB/Mongoose pagination
+         */
+        const mongooseOptions = {
+            // Pagination settings
+            page: Math.max(1, parseInt(page)),     // Ensure minimum page is 1
+            limit: Math.min(100, Math.max(1, parseInt(limit))), // Limit between 1-100
+
+            // Sort settings
+            sort,
+
+            // Field population (resolving references)
+            populate: [
+                { 
+                    path: 'categories',    // Field to populate
+                    select: 'name slug'    // Fields to return
+                },
+                { 
+                    path: 'tags',          // Field to populate
+                    select: 'name slug'    // Fields to return
+                }
+            ],
+            
+            // Exclude unnecessary fields
+            select: '-__v'  // Exclude version key
+        };
+
+        /**
+         * STEP 4: Execute Query
+         * Use mongoose-paginate-v2 plugin to execute query with pagination
+         */
+        const result = await Post.paginate(filters, mongooseOptions);
+
+        /**
+         * STEP 5: Transform for Client Response
+         * Format the data for API response
+         */
+        return {
+            posts: result.docs,
+            pagination: {
+                total: result.totalDocs,      // Total documents in collection
+                currentPage: result.page,     // Current page number
+                totalPages: result.totalPages, // Total number of pages
+                limit: result.limit,          // Documents per page
+                hasNextPage: result.hasNextPage,  // More pages after this?
+                hasPrevPage: result.hasPrevPage  // More pages before this?
+            }
+        };
     } catch (error) {
-        throw new Error(`Posts fetch failed: ${error.message}`);
+        throw new Error(`Failed to fetch posts: ${error.message}`);
     }
 }
 

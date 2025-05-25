@@ -26,3 +26,17 @@ const deviceSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+// Index for faster queries
+deviceSchema.index({ userId: 1, deviceToken: 1 }, { unique: true });
+
+deviceSchema.pre('save', function() {
+    this.lastUsed = new Date();
+});
+
+deviceSchema.statics.cleanupInactiveTokens = async function(days = 30) {
+    return this.deleteMany({ 
+        lastUsed: { $lt: new Date(Date.now() - days * 86400000) } 
+    });
+};
+
+module.exports = mongoose.model('UserDevice', deviceSchema);

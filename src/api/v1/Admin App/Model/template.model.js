@@ -1,7 +1,10 @@
 const mongoose = require('mongoose');
 
-// Check if model exists before defining
-const NotificationTemplate = mongoose.models.NotificationTemplate || mongoose.model('NotificationTemplate', new mongoose.Schema({
+/**
+ * Notification Template Schema
+ * Handles email/SMS/push notification templates with variable substitution
+ */
+const NotificationTemplateSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
@@ -29,18 +32,55 @@ const NotificationTemplate = mongoose.models.NotificationTemplate || mongoose.mo
     }
 }, {
     timestamps: true
-}));
-// Add pre-save hook only if it doesn't exist
-schema.pre('save', function() {
+});
+
+/**
+ * Extract variables from a single template string
+ * @param {string} text - Template text containing variables like {{varName}}
+ * @returns {string[]} Array of variable names without duplicates
+ * @example
+ * extractFieldVariables("Hello {{name}}!") // returns ['name']
+ */
+function extractFieldVariables(text) {
+    if (!text) return [];
+    
     const regex = /\{\{(\w+)\}\}/g;
-    const variables = new Set();
+    const matches = text.matchAll(regex);
+    return [...new Set([...matches].map(match => match[1]))];
+}
+
+/**
+ * Combine variables from multiple template fields
+ * @param {Object} fields - Object containing template fields
+ * @returns {string[]} Combined array of unique variables
+ * @example
+ * extractTemplateVariables({
+ *   title: "Hello {{name}}",
+ *   message: "{{name}}'s order {{orderId}}"
+ * }) // returns ['name', 'orderId']
+ */
+function extractTemplateVariables(fields) {
+    const allVariables = Object.values(fields)
+        .filter(Boolean)
+        .flatMap(extractFieldVariables);
     
-    [this.title, this.message].forEach(text => {
-        [...text.matchAll(regex)].forEach(match => vars.add(match[1]));
-    });
-    
-    this.variables = Array.from(vars);
+    return [...new Set(allVariables)];
+}
+
+/**
+ * Pre-save middleware to automatically extract variables from title and message
+ */
+NotificationTemplateSchema.pre('save', function(next) {
+    try {
+        this.variables = extractTemplateVariables({
+            title: this.title,
+            message: this.message
+        });
+        next();
+    } catch (error) {
+        next(error);
+    }
 });
 
 module.exports = mongoose.models.NotificationTemplate || 
-                 mongoose.model('NotificationTemplate', schema);
+                 mongoose.model('NotificationTemplate', NotificationTemplateSchema);

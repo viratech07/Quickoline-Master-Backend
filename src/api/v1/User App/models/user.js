@@ -8,58 +8,6 @@ const AddressSchema = new mongoose.Schema({
     country: String
 });
 
-const FeedbackSchema = new mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    },
-    type: {
-        type: String,
-        enum: ['Service', 'Bug Report', 'Suggestion', 'Other'],
-        required: true
-    },
-    description: {
-        type: String,
-        required: true
-    },
-    rating: {
-        type: Number,
-        min: 1,
-        max: 5
-    },
-    status: {
-        type: String,
-        enum: ['Pending', 'Reviewed', 'Resolved'],
-        default: 'Pending'
-    }
-}, { timestamps: true });
-
-const ContactSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    phone: {
-        type: String,
-        required: true
-    },
-    email: {
-        type: String,
-        match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address']
-    },
-    notes: String,
-    status: {
-        type: String,
-        enum: ['Open', 'In Progress', 'Closed'],
-        default: 'Open'
-    },
-    priority: {
-        type: String,
-        enum: ['Low', 'Medium', 'High'],
-        default: 'Medium'
-    }
-}, { timestamps: true });
-
 const userSchema = new mongoose.Schema({
     // Reference to Auth document (will be same as JWT subject)
     authId: {
@@ -110,8 +58,60 @@ const userSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     }],
-    feedbacks: [FeedbackSchema],
-    contacts: [ContactSchema],
+
+    // Embedded Feedback Schema
+    feedbacks: [{
+        userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        type: {
+            type: String,
+            enum: ['Service', 'Bug Report', 'Suggestion', 'Other'],
+            required: true
+        },
+        description: {
+            type: String,
+            required: true
+        },
+        rating: {
+            type: Number,
+            min: 1,
+            max: 5
+        },
+        status: {
+            type: String,
+            enum: ['Pending', 'Reviewed', 'Resolved'],
+            default: 'Pending'
+        }
+    }, { timestamps: true }],
+
+    // Embedded Contact Schema
+    contacts: [{
+        name: {
+            type: String,
+            required: true
+        },
+        phone: {
+            type: String,
+            required: true
+        },
+        email: {
+            type: String,
+            match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address']
+        },
+        notes: String,
+        status: {
+            type: String,
+            enum: ['Open', 'In Progress', 'Closed'],
+            default: 'Open'
+        },
+        priority: {
+            type: String,
+            enum: ['Low', 'Medium', 'High'],
+            default: 'Medium'
+        }
+    }, { timestamps: true }],
 
     // Sync tracking
     lastSyncedWithAuth: {
